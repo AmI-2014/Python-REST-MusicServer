@@ -1,0 +1,1 @@
+curl -H "Content-Type: application/json" -d @./track.json -X PUT http://localhost:8080/api/v1/player/stop
