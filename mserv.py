@@ -21,7 +21,7 @@ def jsonify(func):
         # set the response content-type to json
         cherrypy.response.headers["Content-Type"] = "application/json"
         # serialize as json
-        return json.dumps(value, sort_keys=True, indent=4, default=lambda o: o.__dict__)
+        return json.dumps(value, indent=4, default=lambda o: o.__dict__)
 
     return wrapper
 
@@ -154,7 +154,7 @@ class Player:
         # the current queue
         self.queue = []
         # the currently played track
-        self.current = None
+        self.current = ""
         #the current status
         self.status = "stopped"
         #start the player in idle mode
@@ -192,6 +192,8 @@ class Player:
                     self.status = "playing"
                     #set the currently played track
                     self.current = self.tracks.tracks[int(track_id)].data
+                    #reset the queue
+                    self.queue = []
                     #return the current status
                     status =  {"status":self.status,"current" : self.current}
                     
@@ -204,12 +206,16 @@ class Player:
                    
                     #check for tracks
                     if playlist["tracks"]!= None:
+                        #reset the queue
+                        self.queue = []
+                        #initialize the track counter
                         i = 0;
                         #for all tracks
                         for track in playlist["tracks"]:
                             #start playing the first track
                             if(i == 0):
                                 self.player.stdin.write("loadfile \"%s\"\n"%self.tracks.tracks[int(track)].filename)
+                                #update the inner status
                                 self.status = "playing"
                                 self.current = self.tracks.tracks[int(track)].data
                             else:
@@ -219,27 +225,41 @@ class Player:
                             i+=1
                         
                         #update the json status
-                        status =  {"status":"playing","current" : self.current,"queue":self.queue}   
+                        status =  {"status":self.status,"current" : self.current,"queue":self.queue}   
             #STOP  
             elif command.lower() == 'stop':
                 #stop playing
                 self.player.stdin.write("stop\n")
+                
+                #update the inner status
+                self.status = "stopped"
+                
                 #updated the jsn status
-                status =  {"status":"stop"}
+                status =  {"status":self.status}
             #NEXT
             elif command.lower() == 'next':
                 #skip to next track
                 self.player.stdin.write("pt_step 1\n")
-                #update the current track
-                self.current = self.queue[0]
-                #update the queue
-                if len(self.queue) > 1:
-                    self.queue = self.queue[1:]
-                else:
-                    self.queue = []
+                
+                #update the inner status
+                self.status = "playing"
+                
+                #handle queue composition
+                if(len(self.queue) > 0):
+                    #update the current track
+                    self.current = self.queue[0]
+                    #update the queue
+                    if len(self.queue) > 1:
+                        self.queue = self.queue[1:]
+                    else:
+                        self.queue = []
                 #update the json status
-                status =  {"status":"playing","current" : self.current,"queue":self.queue}
+                status =  {"status":self.status,"current" : self.current,"queue":self.queue}
         return status
+    
+    @jsonify
+    def GET(self):
+        return {"status":self.status,"current" : self.current,"queue":self.queue}
     
 if __name__ == '__main__':
     
