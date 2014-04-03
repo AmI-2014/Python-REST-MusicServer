@@ -108,8 +108,8 @@ class Tracks:
         
     def scan(self, music_location):
         '''Walks the given directory to find mp3 and flac music files'''
-        for directory in os.walk(music_location, followlinks=True):
-            i = 0
+        i = 0
+        for directory in os.walk(music_location, followlinks=True):            
             for filename in directory[2]:
                 # check the file extension
                 if filename.endswith('.mp3') or filename.endswith('.flac'):
